@@ -1,10 +1,5 @@
-spring boot hands on lab 201 course
-----------------------------------
-
-1. while creating new maven project don't select create simple project option
-
-   select archetype as "org.apache.maven.archetypes maven-archetype-quickstart 1.1"
-   
+spring boot hands on lab 
+-------------------------
 
 POM - Project Object Model
 
