@@ -1,0 +1,243 @@
+spring boot hands on lab 201 course
+----------------------------------
+
+1. while creating new maven project don't select create simple project option
+
+   select archetype as "org.apache.maven.archetypes maven-archetype-quickstart 1.1"
+   
+
+POM - Project Object Model
+
+BOM - Bill Of Materials
+A BOM is a special kind of POM that is used to control the versions of a project’s dependencies and provide a central place to define and update those 
+versions.
+
+BOM provides the flexibility to add a dependency to our module without worrying about the version that we should depend on.
+
+Spring BOM
+----------
+We may find that a third-party library, or another Spring project, pulls in a transitive dependency to an older release. 
+If we forget to explicitly declare a direct dependency, unexpected issues can arise.
+
+To overcome such problems, Maven supports the concept of BOM dependency.
+
+We can import the spring-framework-bom in our dependencyManagement section to ensure that all Spring dependencies are at the same version:
+
+
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-framework-bom</artifactId>
+            <version>4.3.8.RELEASE</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+============================================
+
+Integrating a Javascript based UI
+------------------------------
+Now clone project from github
+
+type following commands in command prompt
+
+1. git clone https://github.com/dlbunker/ps-spring-boot-resources.git
+
+2. cd ps-spring-boot-resources
+
+this ps-spring-boot-resources project has 2 folders - client,java
+
+3. Now copy files of client/www folder to src/main/resources/public folder path of our das-boot Spring boot application we created earlier.
+   src/main/resources indicates resources related to classpath.
+
+4. Then refresh the project.
+
+5. update maven project
+
+6. Now run the java application
+
+7. go to browser and verify http://localhost:8080/ we would see the message whatever we set earlier with this endpoint.
+
+=============================================
+Creating REST Endpoints
+----------------------
+
+Spring MVC REST Controller
+
+ngResource for Shipwreck
+
+- GET /api/v1/shipwrecks (list)
+- POST /api/v1/shipwrecks (add)
+- GET /api/v1/shipwrecks/{id} (view)
+- PUT /api/v1/shipwrecks/{id} (update)
+- DELETE /api/v1/shipwrecks/{id} (delete)
+
+1. create ShipwreckController in controller package in our das-boot application now add rest endpoint related methods
+
+2. in ps-spring-boot-resources java folder we have Shipwreck.java place this in das-poot model package.
+
+3. Now copy ShipwreckStub.java which is present in ps-spring-boot-resources java folder into controller package.
+  Add RestEndpoints in Shipwreck controller by making calls to ShipwreckStub methods.
+  
+4. hit localhost:8080/index.html# and check whether home page came or not. then click on shipwrecks menu and check whether shipwrecks displaying or not.
+
+=================================
+Configuration app with properties
+--------------------------------
+
+1. create application.properties file and place it on src/main/resources path as this path indicates classpath. Place application specific properties in
+  application.properties file.
+  
+2. For different environments like test,prod,dev we need to create specific application properties file with name application-{profile}.properties.
+  eg: application-test.properties (for test environment)
+      application-dev.properties (for development environment)
+	  application-prod.properties (for production environment)
+	  
+	  Now create application-test and application-prod properties files in our application in src/main/resources path.
+	  override port for these environments.
+	  
+	  give server port as 9090 for test environment and give standard server port 80 for prod environment.
+	  
+	  Inorder to check environment specific configurations working or not in our IDE, we have vm arguments
+	  Go to Run configurations/ java/ our app/ select arguments / under vm arguments section type following 
+	  
+	  -Dspring.profiles.active=test (if we want test our application in test environment)
+
+3. To know which properties spring-boot supports you can verify documentation
+
+   https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+   
+==============================================
+Integrating spring boot with Spring data JPA
+-----------------------------------------
+
+- Spring data JPA provides completes abstraction over DAO layer.
+- Spring Data auto-generates the implementation DAO implementations.
+
+1. we have to add dependencies for spring data JPA and database in pom.xml file.
+
+2. provide property configurations for JPA and database in application.properties.
+
+Add following properties in application.properties file:
+
+	spring.h2.console.enabled=true
+	spring.h2.console.path=/h2
+
+configure data source in application.properties file as follows:
+
+	spring.datasource.url=jdbc:h2:file:~/dasboot
+	spring.datasource.username=sa
+	spring.datasource.password=
+	spring.datasource.driver-class-name=org.h2.Driver
+	
+configure datasource pooling related configurations as follows:
+
+	spring.datasource.max-active=10
+	spring.datasource.max-idle=8
+	spring.datasource.max-wait=10000
+	spring.datasource.min-idle=8
+	spring.datasource.min-evictable-idle-time-millis=1000
+	spring.datasource.time-between-eviction-runs-millis=1
+	
+3. Now add flywaydb dependency in pom.xml
+
+  <dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-core</artifactId>
+  </dependency>
+  
+4. create db and migration folders in src/main/resources (classpath)
+   create 	V2__create_shipwreck.sql file in src/main/resources/migration folder and add table queries in that file.
+   
+5. add flywaydb property in application.properties file
+   flyway.baseline-on-migrate=true
+   
+6. add below property in application.properties file
+	spring.jpa.hibernate.ddl-auto=false
+	
+here we are relying on flyway to create database structure we are making "spring.jpa.hibernate.ddl-auto" property as false.
+Flyway is version control for database. Database migration made easy with Flyway.
+
+Read about flyway here: https://dzone.com/articles/database-versioning-with-flyway-and-java
+
+
+
+3. now java object POJO - represent that as entity with @Entity annotation. annotate primary key variable with @Id and @GeneratedValue.
+ JPA Entity represents underlying table structure.
+4. Create Repository interface which represents DAO layer. Annotate this interface with @Repository
+  This interface should extend JpaRepository or CrudRepository of spring framework. CrudRepository has all crud operations.
+  Repository typically does all database related operations.
+  
+5. Inject the repository in service with @Autowired. Service methods invoke Repository methods to perform database operations.
+6. Controller represents REST controller which has REST endpoints. The job of controller class is to handle HTTP requests and invoke service methods.
+
+
+Testing
+--------
+
+1. add dependency for testing "spring-boot-starter-test"
+ 
+ we can use JUnit, Mockito, Hamcrest, Spring Testing
+ 
+  Hamcrest - Matching and assertions
+  Mockito - mock objects
+  
+  
+---------------
+
+When we change code in our application, we have to restart application again to reflect those changes. So spring boot came with spring-boot-devtools 
+dependency with version 1.3.3 which does automatic restart for us. This is optional dependency.
+
+
+
+-----------------------
+Typesafe with @ConfigurationProperties
+- @ConfigurationProperties annotation turns all your application configurations into typesafe POJOs.
+
+
+- inorder to use @Inject annotation add javax.inject dependency in pom.xml
+
+- add "spring-boot-configuration-processor" dependency in pom.xml file inorder to get auto completion suggestions for custom external configurations.
+
+spring-boot-configuration-processor is an annotation processor that generates metadata about classes in your application that are annotated with
+ @ConfigurationProperties .
+
+
+- check yaml configurations. Use application.yml instead of application.properties
+
+- check how configurations made
+
+
+---------------------------
+spring boot actuator: provides production ready monitoring and management features
+
+- add "spring-boot-starter-actuator" dependency in pom.xml file.
+
+ built in production ready endpoints that come with spring boot actuator:
+ ----
+ 
+ - /autoconfig for report
+ - /beans for all beans
+ - /configprops for all config
+ - /dump for memory dump
+ - /health to check application
+ etc.. check spring documentation for other endpoints
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

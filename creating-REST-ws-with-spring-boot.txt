@@ -1,0 +1,182 @@
+
+
+LEANSTACKS.COM
+
+
+Spring-boot
+------------
+
+1. Download STS, create maven project
+2. update pom.xml with dependencies and plugins
+	parent - spring-boot-starter-parent
+	dependencies :
+	 1. spring-boot-starter-web
+	 2. spring-boot-starter-test
+	plugins: 
+	  spring-boot-maven-plugin
+3. Then create a java class
+   - annotate class with @SpringBootApplication
+   - inside main method add following code
+      SpringApplication.run(classname.class,args);
+4. Now run you would see Spring in the output console
+
+
+Spring-boot creating RESTful webservice
+--------------------------------------
+
+To support RESTful webservice creation sping-boot-starter-web dependency should be present in pom.xml
+
+1. annotate the class with @RestController
+
+2. The method which produces the output we have to annotate with @RequestMapping
+
+  @RequestMapping will take arguments 
+    value - path of the request eg: /api/greetings
+	method - RequestMethod.GET
+	produces - MediaType.APPLICATION_JSON_VALUE
+	
+	So it should be like below
+	@RequestMapping(value="/api/greetings",method="RequestMethod.GET",produces=MediaType.APPLICATION_JSON_VALUE)
+	
+3. The method response should be ResponseEntity<>
+
+   eg: ResponseEntity<Collection<Greeting>> - here Greeting is a model object which has id and string
+         
+4. Return stmt should return output as ResponseEntity
+
+  eg: return new ResponseEntity<Collection<Greeting>>(greetings, HttpStatus.OK); // Here greetings is Collection
+  
+  NOW CHECK REPONSE IN BROWSER. HIT http://localhost:8080/api/greetings
+   
+    IT WILL GIVE JSON Response
+  
+5. Suppose if our path should be /api/greetings/{id} i.e., if we have to get greeting for specific id
+   then method should take argument which is annotated with @PathVariable("id") BigInteger id
+   
+   eg: @RequestMapping(value="/api/greetings/{id}",method="RequestMethod.GET",produces=MediaType.APPLICATION_JSON_VALUE)
+       public ResponseEntity<Greeting> getGreeting(@PathVariable("id") BigInteger id) {
+	   
+	      Greeting greeting = greeting.get(id);
+		  if (greeting == null) {
+		     return new ResponseEntity<Greeting>(HttpStatus.NOT_FOUND);
+		  } else {
+			 return new ResponseEntity<Greeting>(greeting, HttpStatus.OK);
+		  }
+		  
+   NOW CHECK REPONSE IN BROWSER. HIT http://localhost:8080/api/greetings/1
+   
+    IT WILL GIVE JSON Response
+	
+6. Suppose if we want to use POST, if we want create greeting 
+    path should be /api/greetings
+	
+	eg: @RequestMapping(value="/api/greetings",method="RequestMethod.POST",consumes=MediaType.APPLICATION_JSON_VALUE,produces=MediaType.APPLICATION_JSON_VALUE)
+       public ResponseEntity<Greeting> createGreeting(@RequestBody Greeting greeting) {
+	   
+	      Greeting savedGreeting = save(greeting); // will add the greeting in our map
+		  return new ResponseEntity<Greeting>(savedGreeting,HttpStatus.CREATED);
+	   }
+	   
+	   Inorder to provide JSON input to application use postman
+	   
+7. For update use PUT method. Suppose if we want to update greeting path should be /api/greetings/{id} and we have give request payload
+
+	eg: @RequestMapping(value="/api/greetings/{id}",method="RequestMethod.PUT",consumes=MediaType.APPLICATION_JSON_VALUE,produces=MediaType.APPLICATION_JSON_VALUE)
+       public ResponseEntity<Greeting> updateGreeting(@RequestBody Greeting greeting) {
+	   
+	      Greeting updatedGreeting = save(greeting); // will update the greeting in our map
+		  if(updatedGreeting == null) {
+		     return new ResponseEntity<Greeting>(HttpStatus.INTERNAL_SERVER_ERROR);
+		  } else {
+			 return new ResponseEntity<Greeting>(updatedGreeting,HttpStatus.OK);
+		  }
+	   }
+	   
+	   inorder to provide JSON input to application use postman
+
+8. To Delete use DELETE method. Suppose if we want to delete greeting path should be /api/greetings/{id} and we have give request payload which returns 204 (no content) on successful deletion
+
+    eg: @RequestMapping(value="/api/greetings/{id}",method="RequestMethod.DELETE",consumes=MediaType.APPLICATION_JSON_VALUE)
+       public ResponseEntity<Greeting> deleteGreeting(@PathVariable("id") BigInteger id) {
+	   
+	      boolean delete = delete(id); // will update the greeting in our map
+		  if(!delete) {
+		     return new ResponseEntity<Greeting>(HttpStatus.INTERNAL_SERVER_ERROR);
+		  } else {
+			 return new ResponseEntity<Greeting>(HttpStatus.NO_CONTENT);
+		  }
+	   }
+	   
+	   inorder to provide JSON input to application use postman
+ 
+
+To reduce complexity move the logic to Service implementation class. Expose Service interface to controller through dependency injection. Use @Autowired 
+for service interface in controller class. 
+Service should be annotated with @Service.
+
+
+Using Spring data repository with spring-boot
+----------------------------------------------
+We use JPA for data repository. To connect with it add spring-boot-starter-data-jpa and hsqldb dependencies in pom.
+
+1. To make model class as JPA model annotate model with @Entity
+
+2. add @Id and @GeneratedValue for id attribute. @Id indicates that attribute acts as primary key for the model.
+
+3. Create GreetingRepository interface and annotate it with @Repository. And inject this Repopository interface in GreetingServiceBean.
+  GreetingRespository interface extends JpaRepository<Greeting, Long> This long represents type of primary key (id) and Greeting is Entity.
+  
+4. Now move the data related logic from service to repository
+
+5. Now write hsqldb schema in path src/main/resources/data/hsqldb/schema.sql
+
+  In schema.sql write queries for creating greeting table
+  
+  and in src/main/resources/data/hsqldb/data.sql write insert queries
+  
+6. Keep properties in src/main/resources/config/application.properties - for data source configuration
+
+Declarative transaction management using spring-boot
+-----------------------------------------------
+1. To enable transaction management use @EnableTransactionManagement to main spring class
+
+2. Use @Transactional annotation for Service implementation class
+
+  eg:
+    @Service
+	@Transactional(propagation=progation.SUPPORTS, readOnly=true)
+	public class GreetingServiceBean implements GreetingService {
+	
+	}
+	 readOnly = true indicates we can't change the data, we can just access
+	 
+	 so for create and update, delete operations readOnly should be false and propagation = propagation.REQUIRED
+	
+	 we can override class level transaction with method level transaction
+  
+
+Declarative caching management using spring-boot
+-----------------------------------------------
+1. Annotate main spring-boot class with @EnableCaching and write cacheManager method
+
+   @Bean
+   public CacheManager cacheManager() {
+	ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager("greetings");
+	return cacheManager;
+   }
+
+2. Annotate service class
+   @Cacheable for findOne method
+   @CachePut for create ,update methods
+   @CacheEvict for delete method
+   
+3. create evictCache() method in service class
+
+4. Add guava and spring-context-support dependencies in pom.xml
+
+5. Replace ConcurrentMapCacheManager with GuavaCacheManager in spring application class. 
+
+
+   
+   
+   
